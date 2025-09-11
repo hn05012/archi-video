@@ -1,0 +1,12 @@
+version: "3.9"
+
+services:
+  backend:
+    build: ./backend
+    container_name: archi-video-backend
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend/data:/app/data   
+    environment:
+      - UVICORN_WORKERS=1
