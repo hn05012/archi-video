@@ -61,6 +61,15 @@ def _soft_sky_mask(rgb: np.ndarray, feather_px: int = 8, hue_bias: float = 0.0) 
     
     return base
 
+def _boost_mask(masl : np.ndarray, mask_gamma: float = 0.75, mask_gain: float = 2.0) -> np.ndarray:
+    m = np.clip(masl.astype(np.float32), 0.0, 1.0)
+    m = np.power(m, mask_gamma)
+    m *= mask_gain
+
+    return np.clip(m, 0.0, 1.0)
+
+
+
 def _generate_sky_texture(
         size: Tuple[int, int], t: float, intensity: float, *,
     speed: float = 1.2,        
@@ -102,49 +111,72 @@ def _generate_sky_texture(
     return (sky * 255.0 + 0.5).astype(np.uint8)
 
 
+def _sky_texture(shape, mode="bands", sky_contrast: float = 1.6):
+    H, W = shape[:2]
+    yy, xx = np.mgrid[0:H, 0:W]
+    if mode == "bands":
+        freq = 0.08
+        base= 0.5 + 0.5 * np.sin(2.0 * np.pi * freq * xx)
+        grad = 0.85 + 0.15 * (1.0 - (yy.astype(np.float32) / max(1, H -1)))
+        tex = base * grad
+    else:
+        y = np.linspace(0.0, 1.0, H, dtype=np.float32)[:, None]
+        tex = (0.6 + 0.4 * y)
+
+    tex = np.clip((tex - 0.5) * sky_contrast + 0.5, 0.0, 1.0)
+    tex = (255 * np.dstack([tex, tex, tex])).astype(np.uint8)
+    return tex
+
 def sky_frames(
-    image: np.ndarray,
+    rgb: np.ndarray,
     duration_s: float = 4.0,
     fps: int = 24,
     intensity: float = 0.5,
     hue_bias: float = 0.0,
     feather_px: int = 8,
-) -> np.ndarray:
+    sky_speed_px_per_s: float = 12.0, 
+    mask_gamma: float = 0.75,
+    mask_gain: float = 2.0,
+    sky_contrast: float = 1.6,
+    sky_mode: str = "bands",
+    lighten_only: bool = True,
+    debug_dump_mask_path: str | None = None,
+):
     
-    if image.dtype != np.uint8:
-        image = image.clip(0, 255).astype(np.uint8)
-    if image.ndim == 2:
-        image = np.stack([image] * 3, axis=-1)
-    elif image.ndim == 3 and image.shape[2] == 4:
-        image = image[..., :3]
+    if rgb.dtype != np.uint8:
+        rgb = rgb.clip(0, 255).astype(np.uint8)
+    if rgb.ndim == 2:
+        rgb = np.stack([rgb] * 3, axis=-1)
+    elif rgb.ndim == 3 and rgb.shape[2] == 4:
+        rgb = rgb[..., :3]
     
     intensity = float(np.clip(intensity, 0.0, 1.0))
     feather_px = int(max(0, feather_px))
 
-    rgb = image
-    h, w, _ = rgb.shape
+    
 
-    mask = _soft_sky_mask(rgb, feather_px=feather_px, hue_bias=hue_bias)
+    base_rgb = rgb.astype(np.uint8)
+    raw_mask = _soft_sky_mask(base_rgb, feather_px=feather_px, hue_bias=hue_bias)
+    mask = _boost_mask(raw_mask, mask_gamma=mask_gamma, mask_gain=mask_gain)[..., None]
+    
+    if debug_dump_mask_path:
+        import imageio.v3 as iio
+        iio.imwrite(debug_dump_mask_path, (mask[..., 0] * 255).astype(np.uint8))
+    
+    sky_tex0 = _sky_texture(base_rgb.shape, mode=sky_mode, sky_contrast=sky_contrast)
 
-    sky_alpha = np.clip(mask * 1.15 - 0.05, 0.0, 1.0)
-    fg_alpha = 1.0 - sky_alpha
-    fg = rgb.astype(np.float32) / 255.0
+    total = max(1, int(round(duration_s * fps)))
 
-    num_frames = int(round(duration_s * fps))
-    t_values = np.linspace(0, 2 * np.pi, num_frames, endpoint=False)
+    
+    for t in range(total):
+        shift = int(round((sky_speed_px_per_s * t) / fps))
+        sky_tex = np.roll(sky_tex0, shift, axis=1)  # move left→right
 
-    frames = []
-    for t in t_values:
-        sky = _generate_sky_texture(
-            (h, w), t=t, intensity=intensity,
-            speed=1.1,          # try 1.0–1.4
-            density=1.6,        # 1.2–1.8 gives thinner, less “slab” look
-            vertical_wobble=0.3,# 0.2–0.35 adds natural bend
-            lighten_only=True   # prevents “gray sheet” feel
-        ).astype(np.float32) / 255.0
+        if lighten_only:
+            blend_base = np.maximum(base_rgb, sky_tex).astype(np.float32)
+        else:
+            blend_base = sky_tex.astype(np.float32)
 
-        comp = sky * sky_alpha[..., None] + fg * fg_alpha[..., None]
-        frame = (np.clip(comp, 0.0, 1.0) * 255.0 + 0.5).astype(np.uint8)
-        frames.append(frame)
-
-    return frames
+        alpha = float(intensity) * mask  # HxWx1
+        out = base_rgb.astype(np.float32) * (1.0 - alpha) + blend_base * alpha
+        yield np.clip(out, 0, 255).astype(np.uint8)

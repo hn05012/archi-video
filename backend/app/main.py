@@ -2,7 +2,7 @@ import io
 from fastapi import FastAPI, HTTPException, UploadFile, File, Form
 from PIL import Image
 from fastapi.responses import JSONResponse
-from app.utils.io import save_upload, make_output_path
+from app.utils.io import ensure_max_width, save_upload, make_output_path
 from app.services.presets import load_image_rgb, static_video_frames, light_pulse_frames
 from app.services.encode import write_mp4
 from app.services.sky_anim import sky_frames
@@ -56,15 +56,22 @@ async def video_sky(
     try:
         path = save_upload(file)
         image = load_image_rgb(path)
+        image = ensure_max_width(image, 1280)
         print("Loaded image size:", image.size)
 
         frames = sky_frames(
-            image,
+            rgb = image,
             duration_s=duration_s,
             fps=fps,
             intensity=intensity,
             hue_bias=hue_bias,
             feather_px=feather_px,
+            sky_speed_px_per_s=20.0, 
+            mask_gamma=0.75,
+            mask_gain=2.0,
+            sky_contrast=1.6,
+            sky_mode="bands",
+            lighten_only=True,
         )
 
         out_path = make_output_path("mp4")
@@ -73,5 +80,5 @@ async def video_sky(
         return JSONResponse(content={"video_path": str(out_path)})
 
     except Exception as e:
-        return HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e))
 
