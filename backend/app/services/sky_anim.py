@@ -14,13 +14,7 @@ logging.basicConfig(
 
 logger = logging.getLogger("sky_anim")
 
-def _np_from_pil(img: Image.Image) -> np.ndarray:
-    if img.mode != "RGB":
-        img = img.convert("RGB")
-    return np.array(img, dtype=np.uint8)
 
-def _pil_from_np(arr: np.ndarray) -> Image.Image:
-    return Image.fromarray(arr.astype(np.uint8), mode="RGB")
 
 def _soft_sky_mask(rgb: np.ndarray, feather_px: int = 8, hue_bias: float = 0.0) -> np.ndarray:
     rgb_f = rgb.astype(np.float32) / 255.0
@@ -166,6 +160,7 @@ def sky_frames(
     sky_tex0 = _sky_texture(base_rgb.shape, mode=sky_mode, sky_contrast=sky_contrast)
 
     total = max(1, int(round(duration_s * fps)))
+    logger.info("Total frames=%d fps=%d", total, fps)
 
     
     for t in range(total):

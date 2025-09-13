@@ -2,9 +2,10 @@ __pycache__/
 *.pyc
 *.pyo
 *.pyd
-*.db
-.Python
+.env
+venv/
 .venv/
-data/uploads/
-data/outputs/
-.git/
+data/
+uploads/
+outputs/
+.git
