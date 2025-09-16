@@ -6,7 +6,7 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from app.logging_setup import RequestIDFilter, request_id_var
 from app.routers.video import router as video_router
-
+from app.routers.colab import router as colab_router
 
 RequestIDFilter.setup_Logging("INFO")
 
@@ -43,3 +43,4 @@ async def add_request_id_and_timing(request: Request, call_next):
 
 
 app.include_router(video_router)
+app.include_router(colab_router)
