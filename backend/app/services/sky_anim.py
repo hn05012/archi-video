@@ -55,8 +55,8 @@ def _soft_sky_mask(rgb: np.ndarray, feather_px: int = 8, hue_bias: float = 0.0) 
     
     return base
 
-def _boost_mask(masl : np.ndarray, mask_gamma: float = 0.75, mask_gain: float = 2.0) -> np.ndarray:
-    m = np.clip(masl.astype(np.float32), 0.0, 1.0)
+def _boost_mask(mask : np.ndarray, mask_gamma: float = 0.75, mask_gain: float = 2.0) -> np.ndarray:
+    m = np.clip(mask.astype(np.float32), 0.0, 1.0)
     m = np.power(m, mask_gamma)
     m *= mask_gain
 
@@ -172,6 +172,6 @@ def sky_frames(
         else:
             blend_base = sky_tex.astype(np.float32)
 
-        alpha = float(intensity) * mask  # HxWx1
+        alpha = float(intensity) * mask  
         out = base_rgb.astype(np.float32) * (1.0 - alpha) + blend_base * alpha
         yield np.clip(out, 0, 255).astype(np.uint8)

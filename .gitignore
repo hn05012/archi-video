@@ -6,3 +6,5 @@ __pycache__/
 *.db
 backend/data/uploads/
 backend/data/outputs/
+keys/
+*.pem
