@@ -1,9 +1,7 @@
 # 🏛️ Archi-Video
 
-Turn **architectural renderings** into short, cinematic videos with subtle motion.  
-The goal is to help architects present static renders more dynamically while staying faithful to the original images.  
-Future versions will explore **Generative AI** (e.g., diffusion, ControlNets) for richer video effects.
-
+Turn architectural renderings into short, cinematic videos with subtle motion.
+The goal is to help architects present static renders more dynamically while staying faithful to the original images using Gen AI (diffusion models).
 ---
 
 ## 🚀 Features (so far)
@@ -14,7 +12,11 @@ Future versions will explore **Generative AI** (e.g., diffusion, ControlNets) fo
   - `/video/static` → repeats a still image into a video.
   - `/video/light` → pulsing brightness/light effect.
   - `/video/sky` → animated procedural sky effect (mask sky + overlay moving texture).
-- Outputs `.mp4` 
+  - `/colab/svd/start` → start a video generation job on Colab.
+  - `/colab/svd/status/{job_id}` → poll job state (queued, running, done, error).
+  - `/colab/svd/result/{job_id}` → fetch Drive links + metadata once complete.
+- Outputs `.mp4` uploaded to google drive
+- Responses return **shareable Drive Links**
 
 ---
 
@@ -24,7 +26,9 @@ Future versions will explore **Generative AI** (e.g., diffusion, ControlNets) fo
 - **FastAPI + Uvicorn**  
 - **NumPy / Pillow** (image processing)  
 - **imageio-ffmpeg** (video encoding)  
+- **Stable Video Diffusion (SVD)** on **Colab (T4 GPU)**
 - **Docker + docker-compose**  
+- **Cloudflared** tunnel to expose Colab server
 
 ---
 
@@ -40,12 +44,10 @@ cd archi-video
 ```bash
 docker-compose up --build
 ```
-Service will be live at: http://localhost:8000
+Service will be live at: http://127.0.0.1:8000
 
 
 ### 📍 Next Steps
-- Add /video/parallax using depth estimation models (MiDaS/ZoeDepth).
 - Optimize performance (downscale inputs, streaming encoding).
 - Add a React frontend for uploads + preview.
-- Explore GenAI-driven effects (diffusion-based sky replacement, animated lighting, etc.).
-
+- Explore GenAI-driven effects with Control nets
