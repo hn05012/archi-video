@@ -1,12 +1,15 @@
 
 import logging
+import os
 import time
 import uuid
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from app.logging_setup import RequestIDFilter, request_id_var
 from app.routers.video import router as video_router
 from app.routers.colab import router as colab_router
+from app.routers.svd import router as svd_router
 
 RequestIDFilter.setup_Logging("INFO")
 
@@ -42,5 +45,12 @@ async def add_request_id_and_timing(request: Request, call_next):
         request_id_var.reset(token)
 
 
+DATA_DIR = os.getenv("DATA_DIR", "/app/data/outputs/jobs")
+STATIC_ROOT = os.path.abspath(os.path.join(DATA_DIR, os.pardir))
+os.makedirs(STATIC_ROOT, exist_ok=True)
+app.mount("/static", StaticFiles(directory=STATIC_ROOT), name="static")
+
+
 app.include_router(video_router)
 app.include_router(colab_router)
+app.include_router(svd_router)

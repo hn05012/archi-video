@@ -6,6 +6,7 @@ __pycache__/
 *.db
 backend/data/uploads/
 backend/data/outputs/
+backend/app/data/outputs/
 keys/
 *.pem
 .env
