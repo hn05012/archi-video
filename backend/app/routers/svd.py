@@ -1,5 +1,6 @@
+
 from __future__ import annotations
-from fastapi import APIRouter, UploadFile, File, Form, HTTPException
+from fastapi import APIRouter, UploadFile, File, Form, HTTPException, Request
 from PIL import Image
 import io
 
@@ -28,7 +29,6 @@ async def start(
     except Exception:
         raise HTTPException(status_code=400, detail="invalid image")
 
-    # CPU clamps
     frames = int(max(6, min(frames, 28)))
     fps = int(max(6, min(fps, 12)))
     max_side = int(max(256, min(max_side, 512)))
@@ -61,17 +61,20 @@ def status(job_id: str):
     }
 
 @router.get("/result/{job_id}")
-def result(job_id: str):
+def result(job_id: str, request: Request):
     job = get_job(job_id)
     if not job:
         raise HTTPException(status_code=404, detail="job not found")
     if job.status != "done":
         raise HTTPException(status_code=409, detail=f"job not ready (status={job.status})")
 
+    rel = f"/static/jobs/{job.id}/out.mp4"
+    base = str(request.base_url).rstrip("/")
     duration_s = job.params["frames"] / float(job.params["fps"])
     return {
         "job_id": job.id,
-        "video_path": f"static/jobs/{job.id}/out.mp4",
+        "video_path": rel.lstrip("/"),
+        "video_url": f"{base}{rel}",
         "frames": job.params["frames"],
         "fps": job.params["fps"],
         "duration_s": duration_s,

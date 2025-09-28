@@ -1,3 +1,4 @@
+
 from __future__ import annotations
 import io, os, time, json, uuid, threading, queue
 from dataclasses import dataclass, asdict
@@ -15,7 +16,6 @@ from diffusers import AnimateDiffVideoToVideoPipeline, MotionAdapter, LCMSchedul
 from diffusers.utils.logging import set_verbosity_info as df_set_info
 import transformers
 
-
 df_set_info()
 transformers.utils.logging.set_verbosity_error()
 logger = logging.getLogger("i2v_worker")
@@ -26,14 +26,12 @@ if not logger.handlers:
 logger.setLevel(logging.INFO)
 logger.propagate = False
 
-
 APP_DIR = Path(__file__).resolve().parents[1]
 OUTPUTS_ROOT = APP_DIR / "data" / "outputs"
 DATA_DIR = Path(os.getenv("DATA_DIR", OUTPUTS_ROOT / "jobs"))
 DATA_DIR.mkdir(parents=True, exist_ok=True)
 
 MAX_QUEUE = int(os.getenv("MAX_QUEUE", "2"))
-
 
 PROMPT_DEFAULT = (
     "camera locked, static architecture, building unchanged, sharp straight edges; "
@@ -62,11 +60,9 @@ class Job:
     started_ts: Optional[float] = None
     finished_ts: Optional[float] = None
     error: Optional[str] = None
-
-    current: int = 0        
-    total: int = 0          
+    current: int = 0
+    total: int = 0
     eta_seconds: Optional[float] = None
-
     params: Dict = None
     job_dir: str = ""
     input_path: str = ""
@@ -212,7 +208,6 @@ class JobQueue:
             img = _load_and_resize_image(f.read(), p["max_side"])
         frames_in: List[Image.Image] = [img.copy() for _ in range(p["frames"])]
 
-        # seed (CPU)
         generator = torch.Generator(device="cpu")
         if p.get("seed") is not None:
             generator = generator.manual_seed(int(p["seed"]))
@@ -233,7 +228,6 @@ class JobQueue:
             generator=generator,
         )
 
-        
         t0 = time.time()
         last_t = t0
         def _on_step(step_idx: int, timestep: int, latents):
@@ -259,7 +253,6 @@ class JobQueue:
 
             frames_out: List[Image.Image] = out.frames[0]
 
-            
             job.current = steps_total
             job.eta_seconds = 3.0
             _write_meta(job)
