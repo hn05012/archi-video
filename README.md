@@ -68,8 +68,10 @@ Before the CPU-only pivot, the POC could launch jobs on Google Colab (T4 GPU) an
 
 **High-level setup (legacy)**:
 
-1. Open the Colab notebook (GPU runtime), install deps, run the FastAPI worker.
+1. Open the Colab notebook (GPU runtime), install deps, run the FastAPI worker. 
 2. Expose the Colab server via **Cloudflared** tunnel to get a public URL.
 3. Call the **/colab/svd/\*** endpoints from your local app; results were uploaded to Google Drive and the API returned shareable links.
 
 ⚠️ Note: I had to switch from Colab to local setup because of free tier limits on Colab
+Colab notebook: https://colab.research.google.com/drive/1w2xOwtriqRWuQ0nyUiKF03ub3eWdohJW
+
